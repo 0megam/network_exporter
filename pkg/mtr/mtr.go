@@ -90,6 +90,8 @@ func runMtr(destAddr string, srcAddr string, icmpID int, options *MtrOptions) (r
 	// Avoid collisions/interference caused by multiple coroutines initiating mtr
 	pid := icmpID
 	timeout := options.Timeout()
+	packetSize := options.PacketSize()
+	dontFragment := options.DontFragment()
 	mtrReturns := make([]*MtrReturn, options.MaxHops()+1)
 
 	// Verify data packets
@@ -100,7 +102,7 @@ func runMtr(destAddr string, srcAddr string, icmpID int, options *MtrOptions) (r
 				mtrReturns[ttl] = &MtrReturn{ttl: ttl, host: "unknown", succSum: 0, success: false, lastTime: time.Duration(0), sumTime: time.Duration(0), bestTime: time.Duration(0), worstTime: time.Duration(0), avgTime: time.Duration(0)}
 			}
 
-			hopReturn, err := icmp.Icmp(destAddr, srcAddr, ttl, pid, timeout, seq)
+			hopReturn, err := icmp.Icmp(destAddr, srcAddr, ttl, pid, timeout, seq, packetSize, dontFragment)
 			if err != nil || !hopReturn.Success {
 				continue
 			}

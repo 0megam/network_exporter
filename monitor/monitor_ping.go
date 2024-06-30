@@ -23,6 +23,8 @@ type PING struct {
 	interval time.Duration
 	timeout  time.Duration
 	count    int
+	packetSize int
+	dontFragment bool
 	targets  map[string]*target.PING
 	mtx      sync.RWMutex
 }
@@ -40,6 +42,8 @@ func NewPing(logger log.Logger, sc *config.SafeConfig, resolver *config.Resolver
 		interval: sc.Cfg.ICMP.Interval.Duration(),
 		timeout:  sc.Cfg.ICMP.Timeout.Duration(),
 		count:    sc.Cfg.ICMP.Count,
+		packetSize: sc.Cfg.ICMP.PacketSize,
+		dontFragment: sc.Cfg.ICMP.DontFragment,
 		targets:  make(map[string]*target.PING),
 	}
 }
@@ -113,7 +117,7 @@ func (p *PING) AddTargetDelayed(name string, host string, ip string, srcAddr str
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
-	target, err := target.NewPing(p.logger, p.icmpID, startupDelay, name, host, ip, srcAddr, p.interval, p.timeout, p.count, labels)
+	target, err := target.NewPing(p.logger, p.icmpID, startupDelay, name, host, ip, srcAddr, p.interval, p.timeout, p.count, labels, p.packetSize, p.dontFragment)
 	if err != nil {
 		return err
 	}

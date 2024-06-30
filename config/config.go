@@ -44,12 +44,16 @@ type MTR struct {
 	Timeout  duration `yaml:"timeout" json:"timeout" default:"4s"`
 	MaxHops  int      `yaml:"max-hops" json:"max-hops" default:"30"`
 	Count    int      `yaml:"count" json:"count" default:"10"`
+	PacketSize    int      `yaml:"count" json:"count" default:"64"`
+	DontFragment  bool      `yaml:"count" json:"count" default:"false"`
 }
 
 type ICMP struct {
 	Interval duration `yaml:"interval" json:"interval" default:"5s"`
 	Timeout  duration `yaml:"timeout" json:"timeout" default:"4s"`
 	Count    int      `yaml:"count" json:"count" default:"10"`
+	PacketSize    int      `yaml:"count" json:"count" default:"64"`
+	DontFragment  bool      `yaml:"count" json:"count" default:"false"`
 }
 
 type Conf struct {

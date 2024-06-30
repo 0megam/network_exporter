@@ -20,7 +20,7 @@ const (
 )
 
 // Icmp Validate IP and check the version
-func Icmp(destAddr string, srcAddr string, ttl int, pid int, timeout time.Duration, seq int) (hop common.IcmpReturn, err error) {
+func Icmp(destAddr string, srcAddr string, ttl int, pid int, timeout time.Duration, seq int, packetSize int, dontFragment bool) (hop common.IcmpReturn, err error) {
 	dstIp := net.ParseIP(destAddr)
 	if dstIp == nil {
 		return hop, fmt.Errorf("destination ip: %v is invalid", destAddr)
@@ -35,18 +35,18 @@ func Icmp(destAddr string, srcAddr string, ttl int, pid int, timeout time.Durati
 		}
 
 		if p4 := dstIp.To4(); len(p4) == net.IPv4len {
-			return icmpIpv4(srcAddr, &ipAddr, ttl, pid, timeout, seq)
+			return icmpIpv4(srcAddr, &ipAddr, ttl, pid, timeout, seq, packetSize, dontFragment)
 		}
-		return icmpIpv6(srcAddr, &ipAddr, ttl, pid, timeout, seq)
+		return icmpIpv6(srcAddr, &ipAddr, ttl, pid, timeout, seq, packetSize, dontFragment)
 	}
 
 	if p4 := dstIp.To4(); len(p4) == net.IPv4len {
-		return icmpIpv4("0.0.0.0", &ipAddr, ttl, pid, timeout, seq)
+		return icmpIpv4("0.0.0.0", &ipAddr, ttl, pid, timeout, seq, packetSize, dontFragment)
 	}
-	return icmpIpv6("::", &ipAddr, ttl, pid, timeout, seq)
+	return icmpIpv6("::", &ipAddr, ttl, pid, timeout, seq, packetSize, dontFragment)
 }
 
-func icmpIpv4(localAddr string, dst net.Addr, ttl int, pid int, timeout time.Duration, seq int) (hop common.IcmpReturn, err error) {
+func icmpIpv4(localAddr string, dst net.Addr, ttl int, pid int, timeout time.Duration, seq int, packetSize int, dontFragment bool) (hop common.IcmpReturn, err error) {
 	hop.Success = false
 	start := time.Now()
 	c, err := icmp.ListenPacket("ip4:icmp", localAddr)
@@ -62,8 +62,18 @@ func icmpIpv4(localAddr string, dst net.Addr, ttl int, pid int, timeout time.Dur
 	if err = c.SetDeadline(time.Now().Add(timeout)); err != nil {
 		return hop, err
 	}
+	
+	if dontFragment {
+		v4RawConn, err := ipv4.NewRawConn(c)
+		if err != nil {
+			return hop, err
+		}
+		defer v4RawConn.Close()
+	}
 
-	bs := make([]byte, 4)
+
+
+	bs := make([]byte, packetSize) // Use packetSize here
 	binary.LittleEndian.PutUint32(bs, uint32(seq))
 	wm := icmp.Message{
 		Type: ipv4.ICMPTypeEcho,
@@ -71,7 +81,7 @@ func icmpIpv4(localAddr string, dst net.Addr, ttl int, pid int, timeout time.Dur
 		Body: &icmp.Echo{
 			ID:   pid,
 			Seq:  seq,
-			Data: append(bs, 'x'),
+			Data: bs, // Use bs directly here
 		},
 	}
 
@@ -84,7 +94,7 @@ func icmpIpv4(localAddr string, dst net.Addr, ttl int, pid int, timeout time.Dur
 		return hop, err
 	}
 
-	peer, _, err := listenForSpecific4(c, append(bs, 'x'), pid, seq, wb)
+	peer, _, err := listenForSpecific4(c, bs, pid, seq, wb) // Use bs directly here
 	if err != nil {
 		return hop, err
 	}
@@ -96,7 +106,7 @@ func icmpIpv4(localAddr string, dst net.Addr, ttl int, pid int, timeout time.Dur
 	return hop, err
 }
 
-func icmpIpv6(localAddr string, dst net.Addr, ttl, pid int, timeout time.Duration, seq int) (hop common.IcmpReturn, err error) {
+func icmpIpv6(localAddr string, dst net.Addr, ttl, pid int, timeout time.Duration, seq int, packetSize int, dontFragment bool) (hop common.IcmpReturn, err error) {
 	hop.Success = false
 	start := time.Now()
 	c, err := icmp.ListenPacket("ip6:ipv6-icmp", localAddr)

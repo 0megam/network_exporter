@@ -10,12 +10,14 @@ import (
 )
 
 // Ping ICMP Operation
-func Ping(addr string, ip string, srcAddr string, count int, timeout time.Duration, icmpID int) (*PingResult, error) {
+func Ping(addr string, ip string, srcAddr string, count int, timeout time.Duration, icmpID int, packetSize int, dontFragment bool) (*PingResult, error) {
 	var out PingResult
 
 	pingOptions := &PingOptions{}
 	pingOptions.SetCount(count)
 	pingOptions.SetTimeout(timeout)
+	pingOptions.SetPacketSize(packetSize)
+	pingOptions.SetDontFragment(dontFragment)
 
 	out, err := runPing(addr, ip, srcAddr, icmpID, pingOptions)
 	if err != nil {
@@ -25,10 +27,12 @@ func Ping(addr string, ip string, srcAddr string, count int, timeout time.Durati
 }
 
 // PingString ICMP Operation
-func PingString(addr string, ip string, srcAddr string, count int, timeout time.Duration, icmpID int) (result string, err error) {
+func PingString(addr string, ip string, srcAddr string, count int, timeout time.Duration, icmpID int, packetSize int, dontFragment bool) (result string, err error) {
 	pingOptions := &PingOptions{}
 	pingOptions.SetCount(count)
 	pingOptions.SetTimeout(timeout)
+	pingOptions.SetPacketSize(packetSize)
+	pingOptions.SetDontFragment(dontFragment)
 
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf("Start %v, PING %v (%v)\n", time.Now().Format("2006-01-02 15:04:05"), addr, addr))
@@ -55,12 +59,14 @@ func runPing(ipAddr string, ip string, srcAddr string, icmpID int, option *PingO
 	// Avoid collisions/interference caused by multiple coroutines initiating mtr
 	pid := icmpID
 	timeout := option.Timeout()
+	packetSize := option.PacketSize()
+	dontFragment := option.DontFragment()
 	ttl := defaultTTL
 	pingReturn := PingReturn{}
 
 	seq := 0
 	for cnt := 0; cnt < option.Count(); cnt++ {
-		icmpReturn, err := icmp.Icmp(ip, srcAddr, ttl, pid, timeout, seq)
+		icmpReturn, err := icmp.Icmp(ip, srcAddr, ttl, pid, timeout, seq, packetSize, dontFragment)
 
 		if err != nil || !icmpReturn.Success || !common.IsEqualIP(ip, icmpReturn.Addr) {
 			continue

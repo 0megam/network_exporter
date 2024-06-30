@@ -10,6 +10,7 @@ const defaultMaxHops = 30
 const defaultTimeout = 5 * time.Second
 const defaultPackerSize = 56
 const defaultCount = 10
+const defaultDontFragment = false
 
 // MtrResult Calculated results
 type MtrResult struct {
@@ -41,6 +42,7 @@ type MtrOptions struct {
 	timeout    time.Duration
 	packetSize int
 	count      int
+	dontFragment bool
 }
 
 // MaxHops Getter
@@ -93,4 +95,17 @@ func (options *MtrOptions) PacketSize() int {
 // SetPacketSize Setter
 func (options *MtrOptions) SetPacketSize(packetSize int) {
 	options.packetSize = packetSize
+}
+
+// DontFragment Getter
+func (options *MtrOptions) DontFragment() bool {
+	if options.dontFragment == false {
+		options.dontFragment = defaultDontFragment
+	}
+	return options.dontFragment
+}
+
+// SetDontFragment Setter
+func (options *MtrOptions) SetDontFragment(dontFragment bool) {
+	options.dontFragment = dontFragment
 }

@@ -26,6 +26,8 @@ type PING struct {
 	timeout  time.Duration
 	count    int
 	labels   map[string]string
+	packetSize int
+	dontFragment bool
 	result   *ping.PingResult
 	stop     chan struct{}
 	wg       sync.WaitGroup
@@ -33,7 +35,7 @@ type PING struct {
 }
 
 // NewPing starts a new monitoring goroutine
-func NewPing(logger log.Logger, icmpID *common.IcmpID, startupDelay time.Duration, name string, host string, ip string, srcAddr string, interval time.Duration, timeout time.Duration, count int, labels map[string]string) (*PING, error) {
+func NewPing(logger log.Logger, icmpID *common.IcmpID, startupDelay time.Duration, name string, host string, ip string, srcAddr string, interval time.Duration, timeout time.Duration, count int, labels map[string]string, packetSize int, dontFragment bool) (*PING, error) {
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
@@ -48,6 +50,8 @@ func NewPing(logger log.Logger, icmpID *common.IcmpID, startupDelay time.Duratio
 		timeout:  timeout,
 		count:    count,
 		labels:   labels,
+		packetSize: packetSize,
+		dontFragment: dontFragment,
 		stop:     make(chan struct{}),
 		result:   &ping.PingResult{},
 	}
@@ -90,7 +94,7 @@ func (t *PING) Stop() {
 
 func (t *PING) ping() {
 	icmpID := int(t.icmpID.Get())
-	data, err := ping.Ping(t.host, t.ip, t.srcAddr, t.count, t.timeout, icmpID)
+	data, err := ping.Ping(t.host, t.ip, t.srcAddr, t.count, t.timeout, icmpID, t.packetSize, t.dontFragment)
 	if err != nil {
 		level.Error(t.logger).Log("type", "ICMP", "func", "ping", "msg", fmt.Sprintf("%s", err))
 	}

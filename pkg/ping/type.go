@@ -6,6 +6,7 @@ const defaultTimeout = 5 * time.Second
 const defaultPackerSize = 56
 const defaultCount = 10
 const defaultTTL = 128
+const defaultDontFragment = false
 
 // PingResult Calculated results
 type PingResult struct {
@@ -42,6 +43,7 @@ type PingOptions struct {
 	count      int
 	timeout    time.Duration
 	packetSize int
+	dontFragment bool
 }
 
 // Count Getter
@@ -77,8 +79,20 @@ func (options *PingOptions) PacketSize() int {
 	}
 	return options.packetSize
 }
+// DontFragment Getter
+func (options *PingOptions) DontFragment() bool {
+	if options.dontFragment == false {
+		options.dontFragment = defaultDontFragment
+	}
+	return options.dontFragment
+}
 
 // SetPacketSize Setter
 func (options *PingOptions) SetPacketSize(packetSize int) {
 	options.packetSize = packetSize
+}
+
+// SetDontFragment Setter
+func (options *PingOptions) SetDontFragment(dontFragment bool) {
+	options.dontFragment = dontFragment
 }

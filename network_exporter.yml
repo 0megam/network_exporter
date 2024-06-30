@@ -8,6 +8,7 @@ icmp:
   interval: 3s
   timeout: 1s
   count: 6
+  packetSize: 1472
 
 mtr:
   interval: 3s
